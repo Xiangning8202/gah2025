@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -17,6 +17,7 @@ import 'reactflow/dist/style.css';
 import NodeDirectory from '@/components/NodeDirectory';
 import TopBar from '@/components/TopBar';
 import LogPanel from '@/components/LogPanel';
+import PromptInjectNode from '@/components/PromptInjectNode';
 
 // LangGraph Structure - Supervisor Pattern
 const initialNodes: Node[] = [
@@ -253,31 +254,137 @@ export default function Home() {
   const [isLogPanelOpen, setIsLogPanelOpen] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [promptData, setPromptData] = useState<Record<string, string>>({});
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [nodeCounter, setNodeCounter] = useState<Record<string, number>>({});
+
+  // Define custom node types
+  const nodeTypes = useMemo(() => ({
+    promptInject: PromptInjectNode,
+  }), []);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
 
+  // Handler for node selection
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setSelectedNode(node);
+    // console.log('Selected node:', node);
+
+    // Log prompt inject node data specifically
+    if (node.type === 'promptInject') {
+      const storedPrompt = promptData[node.id] || '';
+    //   console.log('Prompt Inject Node Data:', {
+    //     nodeId: node.id,
+    //     prompt: node.data.prompt,
+    //     storedPrompt: storedPrompt,
+    //     title: node.data.title,
+    //     icon: node.data.icon
+    //   });
+    //   console.log('Stored prompt input for this node:', storedPrompt);
+    }
+  }, [promptData]);
+
+  // Handler for updating prompt data
+  const handlePromptChange = useCallback((nodeId: string, prompt: string) => {
+    setPromptData((prev) => {
+      const updated = { ...prev, [nodeId]: prompt };
+      // console.log('Prompt data updated:', { nodeId, prompt });
+      // console.log('All prompt data:', updated);
+      return updated;
+    });
+  }, []);
+
+  // Handler for run button
+  const handleRun = useCallback(async () => {
+    console.log('=== RUN BUTTON CLICKED ===');
+    console.log('Selected Node:', selectedNode);
+    console.log('All Prompt Data:', promptData);
+
+    if (selectedNode) {
+      const storedPrompt = promptData[selectedNode.id] || '';
+      console.log('Selected Prompt Inject Node Data:', {
+        nodeId: selectedNode.id,
+        title: selectedNode.data.title,
+        storedPrompt: storedPrompt
+      });
+
+      try {
+        // Make POST request to the API
+        const response = await fetch('http://localhost:8000/graph', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            node_name: selectedNode.data.title || selectedNode.id,
+            input_data: promptData,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('API Response:', result);
+      } catch (error) {
+        console.error('Error calling API:', error);
+      }
+    }
+  }, [selectedNode, promptData]);
+
   const handleNodeAdd = useCallback((nodeData: { id: string; title: string; icon: string; type: string }) => {
-    const newNode: Node = {
-      id: `${nodeData.id}-${Date.now()}`,
-      type: 'default',
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 400 + 100,
-      },
-      data: {
-        label: (
-          <div className="flex items-center gap-2">
-            <span>{nodeData.icon}</span>
-            <span>{nodeData.title}</span>
-          </div>
-        ),
-      },
-    };
-    setNodes((nds) => [...nds, newNode]);
-  }, [setNodes]);
+    // Get current counter for this node type, default to 1 if not exists
+    const currentCount = nodeCounter[nodeData.id] || 1;
+    const nodeId = `${nodeData.id}-${currentCount}`;
+
+    // Update counter for next node of this type
+    setNodeCounter(prev => ({
+      ...prev,
+      [nodeData.id]: currentCount + 1
+    }));
+
+    // Use custom node type for prompt-inject
+    if (nodeData.id === 'prompt-inject') {
+      const newNode: Node = {
+        id: nodeId,
+        type: 'promptInject',
+        position: {
+          x: Math.random() * 400 + 100,
+          y: Math.random() * 400 + 100,
+        },
+        data: {
+          icon: nodeData.icon,
+          title: nodeData.title,
+          prompt: '',
+          onPromptChange: handlePromptChange,
+        },
+      };
+      setNodes((nds) => [...nds, newNode]);
+    } else {
+      // Default node for other types
+      const newNode: Node = {
+        id: nodeId,
+        type: 'default',
+        position: {
+          x: Math.random() * 400 + 100,
+          y: Math.random() * 400 + 100,
+        },
+        data: {
+          label: (
+            <div className="flex items-center gap-2">
+              <span>{nodeData.icon}</span>
+              <span>{nodeData.title}</span>
+            </div>
+          ),
+        },
+      };
+      setNodes((nds) => [...nds, newNode]);
+    }
+  }, [setNodes, handlePromptChange, nodeCounter]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
@@ -288,6 +395,8 @@ export default function Home() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        nodeTypes={nodeTypes}
         fitView
         className="bg-gray-50"
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
@@ -319,7 +428,7 @@ export default function Home() {
       </button>
 
       {/* Top Bar */}
-      <TopBar />
+      <TopBar onRun={handleRun} />
 
       {/* Node Directory Modal */}
       <NodeDirectory
