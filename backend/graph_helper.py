@@ -40,7 +40,7 @@ class LangGraphCtxHelper:
         self.lc_graph = compiled_graph.get_graph()
 
     def ex_tool(self, fun: str) -> callable:
-        """Call a function from helper.module by name."""
+        """Return a callable from helper.module by name."""
         target = self.module
         for part in fun.split("."):
             target = getattr(target, part, None)

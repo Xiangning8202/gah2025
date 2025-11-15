@@ -53,16 +53,20 @@ class Node:
             return self.data
         return None
 
-    def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, state: Dict[str, Any], *args, **kwargs) -> Dict[str, Any]:
         """Executes the underlying LangGraph step."""
-        print(f"data: {self.data}, typeof: {type(self.data)}")
+
         if self.data is None or not callable(self.data):
             raise ValueError(f"Node {self.name} has no callable data")
 
         try:
-            output = self.data(state)
+            # choose what to pass
+            if args or kwargs:
+                output = self.data(*args, **kwargs)
+            else:
+                output = self.data(state)
 
-            # Record execution
+            # record execution
             self.execution_count += 1
             self.last_executed = datetime.now()
             self.execution_history.append(
@@ -74,6 +78,7 @@ class Node:
                 }
             )
 
+            # normalize return
             if isinstance(output, dict):
                 return output
             return {"result": output}
@@ -89,7 +94,6 @@ class Node:
                     "success": False,
                 }
             )
-            raise
 
     @staticmethod
     def normalize_node(node):
