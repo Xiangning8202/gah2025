@@ -90,3 +90,15 @@ class Node:
                 }
             )
             raise
+
+    @staticmethod
+    def normalize_node(node):
+        is_system_node = node.id.startswith("__") and node.id.endswith("__")
+        node_type = NodeType.SYSTEM if is_system_node else NodeType.STEP
+        return Node(
+            id=node.id,
+            name=node.id,
+            data="Callable()",
+            metadata={},
+            node_type=node_type,
+        )

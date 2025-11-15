@@ -2,7 +2,7 @@ from typing import Dict, List, Any, Set
 import uuid
 from langchain_core.runnables.graph import Graph as LangChainGraph
 
-from models.node import Node, NodeType
+from models.node import Node
 from models.edge import Edge
 
 
@@ -20,29 +20,13 @@ class Graph:
         self.nodes: Dict[str, Node] = {}
         self.edges: List[Edge] = []
 
-        for node_id, node in graph.nodes.items():
-            is_system_node = node_id.startswith("__") and node_id.endswith("__")
-            node_type = NodeType.SYSTEM if is_system_node else NodeType.STEP
-            self.nodes[node_id] = Node(
-                id=node_id,
-                name=node_id,
-                data="Callable()",
-                metadata={},
-                node_type=node_type,
-            )
+        for node in graph.nodes.values():
+            node = Node.normalize_node(node)
+            self.nodes[node.id] = node
 
         for edge in graph.edges:
-            try:
-                source, target, data, conditional, condition, metadata = (
-                    Edge.normalize_edge(edge)
-                )
-                self.edges.append(
-                    Edge(source, target, data, conditional, condition, metadata)
-                )
-            except Exception as e:
-                raise ValueError(
-                    f"Cannot convert edge to Edge model: {edge} (error: {e})"
-                )
+            edge = Edge.normalize_edge(edge)
+            self.edges.append(edge)
 
         # Additional fields
         self.id: str = str(uuid.uuid4())

@@ -29,7 +29,7 @@ class Edge:
     @staticmethod
     def normalize_edge(edge):
         if isinstance(edge, tuple) or hasattr(edge, "__getitem__"):
-            return (
+            return Edge(
                 edge[0],
                 edge[1],
                 getattr(edge, "data", None),
@@ -38,7 +38,7 @@ class Edge:
                 getattr(edge, "metadata", {}),
             )
         elif hasattr(edge, "source") and hasattr(edge, "target"):
-            return (
+            return Edge(
                 edge.source,
                 edge.target,
                 getattr(edge, "data", None),
