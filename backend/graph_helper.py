@@ -38,6 +38,7 @@ class LangGraphCtxHelper:
     def extract_graph(self, compiled_graph: CompiledStateGraph) -> None:
         """Call LangGraph get_graph method."""
         self.lc_graph = compiled_graph.get_graph()
+        print(self.lc_graph.draw_ascii())
 
     def ex_tool(self, fun: str) -> callable:
         """Return a callable from helper.module by name."""
