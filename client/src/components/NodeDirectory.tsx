@@ -5,9 +5,10 @@ import { useState } from 'react';
 interface NodeDirectoryProps {
   isOpen: boolean;
   onClose: () => void;
+  onNodeAdd: (nodeData: { id: string; title: string; icon: string; type: string }) => void;
 }
 
-export default function NodeDirectory({ isOpen, onClose }: NodeDirectoryProps) {
+export default function NodeDirectory({ isOpen, onClose, onNodeAdd }: NodeDirectoryProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isOpen) return null;
@@ -102,92 +103,79 @@ export default function NodeDirectory({ isOpen, onClose }: NodeDirectoryProps) {
     }
   ];
 
-  return (
-    <div className="fixed top-24 left-8 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-[600px] max-h-[600px] overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Add Node</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span className="text-2xl text-gray-600">×</span>
-            </button>
-          </div>
+  const allNodes = [...coreNodes, ...integrations];
 
-          {/* Search Bar */}
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-              🔍
-            </div>
-            <input
-              type="text"
-              placeholder="Search all nodes"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
-            />
-          </div>
+  const filteredNodes = searchQuery
+    ? allNodes.filter(node =>
+        node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        node.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allNodes;
+
+  return (
+    <div className="fixed left-8 top-40 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-40">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-800">Nodes</h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-200 rounded-lg transition-colors"
+            aria-label="Close"
+          >
+            <span className="text-xl text-gray-600">×</span>
+          </button>
         </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[450px] p-6">
-          {/* Core Nodes */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {coreNodes.map((node) => (
-              <button
-                key={node.id}
-                className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all text-left"
-              >
-                <div className={`${node.color} p-3 rounded-lg text-2xl`}>
-                  {node.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                    {node.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 truncate">
-                    {node.description}
-                  </p>
-                </div>
-              </button>
-            ))}
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            🔍
           </div>
+          <input
+            type="text"
+            placeholder="Search nodes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
+          />
+        </div>
+      </div>
 
-          {/* Integrations Section */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-500 mb-3">
-              Integrations
-            </h3>
-            <div className="space-y-2">
-              {integrations.map((integration) => (
-                <button
-                  key={integration.id}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-left group"
-                >
-                  <div className="bg-white border border-gray-200 p-2 rounded-lg text-2xl">
-                    {integration.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                      {integration.title}
-                    </h3>
-                    <p className="text-xs text-gray-600">
-                      {integration.description}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`${integration.badgeColor} px-2 py-1 rounded-md text-xs font-medium`}>
-                      {integration.badge}
-                    </span>
-                    <span className="text-gray-400 group-hover:text-gray-600">›</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Nodes List */}
+      <div className="overflow-y-auto max-h-[calc(60vh-200px)] top-20">
+        <div className="p-2">
+          {filteredNodes.map((node) => (
+            <button
+              key={node.id}
+              onClick={() => {
+                onNodeAdd({
+                  id: node.id,
+                  title: node.title,
+                  icon: node.icon,
+                  type: 'badge' in node ? 'integration' : 'core'
+                });
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left border border-transparent hover:border-gray-200 mb-1"
+            >
+              <div className="flex-shrink-0 text-2xl">
+                {node.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-medium text-gray-900 truncate">
+                  {node.title}
+                </h3>
+                <p className="text-xs text-gray-500 truncate">
+                  {node.description}
+                </p>
+              </div>
+              {'badge' in node && (
+                <span className={`${node.badgeColor} px-2 py-0.5 rounded text-xs font-medium flex-shrink-0`}>
+                  {node.badge}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
     </div>
