@@ -35,14 +35,12 @@ class Graph:
             try:
                 if isinstance(edge, tuple) or hasattr(edge, "__getitem__"):
                     source_id, target_id = edge[0], edge[1]
-                    data = getattr(edge, "data", None)
                     conditional = getattr(edge, "conditional", False)
                     condition = getattr(edge, "condition", None)
                     metadata = getattr(edge, "metadata", {})
 
                 elif hasattr(edge, "source") and hasattr(edge, "target"):
                     source_id, target_id = edge.source, edge.target
-                    data = getattr(edge, "data", None)
                     conditional = getattr(edge, "conditional", False)
                     condition = getattr(edge, "condition", None)
                     metadata = getattr(edge, "metadata", {})
@@ -54,7 +52,6 @@ class Graph:
                     Edge(
                         source=source_id,
                         target=target_id,
-                        data=data,
                         conditional=conditional,
                         condition=condition,
                         metadata=metadata,

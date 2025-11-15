@@ -13,13 +13,11 @@ class Edge:
     Matches langgraph's Edge structure:
     - source: str (required)
     - target: str (required)
-    - data: Optional[Any] (can be None)
     - conditional: bool (required)
     """
 
     source: str
     target: str
-    data: Optional[Any] = None
     conditional: bool = False
 
     # Additional fields for backward compatibility
@@ -30,7 +28,6 @@ class Edge:
         return {
             "source": self.source,
             "target": self.target,
-            "data": self.data,
             "conditional": self.conditional,
             "metadata": self.metadata,
         }
