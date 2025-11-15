@@ -23,6 +23,5 @@ def get_graph(compiled_graph: CompiledStateGraph):
 
     graph = compiled_graph.get_graph()
     graph = Graph(nodes=graph.nodes, edges=graph.edges)
-
-    print(graph.to_dict())
+    print(graph.nodes["step1"].execute({}))
     return graph

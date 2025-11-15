@@ -3,18 +3,20 @@ import sys
 import inspect
 import importlib.util
 from langgraph.graph.state import CompiledStateGraph
-from langchain_core.runnables.graph import Graph
+from langchain_core.runnables.graph import Graph as LangChainGraph
 from types import ModuleType
+from models.graph import Graph
 
 
 class CallableGraphHelper:
-    def __init__(self):
+    def __init__(self, compiled_graph: CompiledStateGraph):
         self.filepath: str = None  # fully resolved filepath
         self.module_name: str = None  # module name (ie; filename w/o extension)
-        self.graph: Graph = None  # langgraph graph
+        self.graph: LangChainGraph = None  # langgraph graph
         self.module: ModuleType = None  # module
 
         self.load_module()
+        self.extract_graph(compiled_graph)
 
     def get_filepath(self) -> None:
         """Inspect call stack for full path of call location."""
@@ -33,13 +35,14 @@ class CallableGraphHelper:
         spec.loader.exec_module(mod)
         self.module = mod
 
-    def extract_graph(self, compiled_graph: CompiledStateGraph) -> Graph:
+    def extract_graph(self, compiled_graph: CompiledStateGraph) -> None:
         """Call LangGraph get_graph method."""
         self.graph = compiled_graph.get_graph()
-        return self.graph
 
-    @classmethod
-    def get_graph(cls, compiled_graph: CompiledStateGraph) -> "CallableGraphHelper":
-        helper = cls()
-        helper.extract_graph(compiled_graph)
-        return helper
+
+def build_callable_graph(compiled_graph: CompiledStateGraph) -> None:
+    helper = CallableGraphHelper(compiled_graph)
+    graph = Graph(helper.graph)
+    print(f"{graph.to_dict()}\n\n")
+    print(graph.nodes)
+    print(graph.edges)
