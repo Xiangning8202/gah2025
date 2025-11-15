@@ -55,6 +55,13 @@ class CallableGraph:
         self.state.update(output)
         return output
 
+    def run_all_nodes(self) -> Dict[str, Any]:
+        for node_id, node in self.nodes.items():
+            if node.data is not None:
+                output = node.execute(self.state)
+                self.state.update(output)
+        return self.state
+
     def _update_start_end_nodes(self):
         """Updates start_nodes and end_nodes based on edges."""
         if not self.edges:

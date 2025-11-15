@@ -8,6 +8,7 @@ def build_callable_graph(compiled_graph: CompiledStateGraph) -> None:
     graph = CallableGraph(helper)
     print(graph.run_node("step1"))
     print(graph.run_node("step2"))
+    print(graph.run_all_nodes())
     # print((helper.lc_graph.nodes["step1"].data).name)
     # print(helper.ex_tool("step2", {}))
     # print(f"{graph.to_dict()}\n\n")
