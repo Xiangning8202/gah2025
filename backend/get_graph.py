@@ -4,6 +4,10 @@ import inspect
 import importlib.util
 from langgraph.graph.state import CompiledStateGraph
 
+from models.graph import Graph
+from models.node import Node
+from models.edge import Edge
+
 
 def get_graph(compiled_graph: CompiledStateGraph):
     """ """
@@ -20,9 +24,7 @@ def get_graph(compiled_graph: CompiledStateGraph):
     spec.loader.exec_module(mod)
 
     graph = compiled_graph.get_graph()
-    print(type(graph))
-    print(graph)
-    print(graph.draw_ascii())
-    state = {}
-    state = mod.step1(state)
-    print(mod.step2(state))
+    graph = Graph(nodes=graph.nodes, edges=graph.edges)
+    
+    print(graph.to_dict())
+    return graph
