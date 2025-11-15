@@ -1,0 +1,15 @@
+client/.venv
+backend/.venv
+api/.venv
+
+client/node_modules
+backend/node_modules
+api/node_modules
+client/.next
+
+backend/__pycache__
+api/__pycache__
+client/__pycache__
+.venv
+
+/api/__pycache__
