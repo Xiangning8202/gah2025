@@ -37,6 +37,7 @@ class CallableGraph:
         self.id: str = str(uuid.uuid4())
         self.name: str = name
         self.description: str = description
+        self.state = {}
 
         # Auto-detect start and end nodes from edges
         self.start_nodes: Set[str] = set()
@@ -47,6 +48,12 @@ class CallableGraph:
         self.execution_state: Dict[str, Any] = {}
         self.execution_history: List[Dict[str, Any]] = []
         self.is_running: bool = False
+
+    def run_node(self, node_id: str) -> Dict[str, Any]:
+        node = self.nodes[node_id]
+        output = node.execute(self.state)
+        self.state.update(output)
+        return output
 
     def _update_start_end_nodes(self):
         """Updates start_nodes and end_nodes based on edges."""
