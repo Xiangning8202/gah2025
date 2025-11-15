@@ -1,28 +1,32 @@
 from typing import Dict, List, Any, Set
 import uuid
-from langchain_core.runnables.graph import Graph as LangChainGraph
 from graph_helper import LangGraphCtxHelper
 
 from node import Node
 from edge import Edge
 
 
-class CallableGraph(LangGraphCtxHelper):
+class CallableGraph:
     """
     Represents a workflow graph created FROM the user's LangGraph object.
     """
 
     def __init__(
         self,
-        graph: LangChainGraph,
+        helper: LangGraphCtxHelper,
         name: str = "",
         description: str = "",
     ):
+        self.helper = helper
+        graph = helper.lc_graph
+
         self.nodes: Dict[str, Node] = {}
         self.edges: List[Edge] = []
 
         for node in graph.nodes.values():
             node = Node.normalize_node(node)
+            if node.data is not None:
+                node.data = self.helper.ex_tool(node.data)
             self.nodes[node.id] = node
 
         for edge in graph.edges:

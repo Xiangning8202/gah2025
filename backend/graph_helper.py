@@ -38,3 +38,14 @@ class LangGraphCtxHelper:
     def extract_graph(self, compiled_graph: CompiledStateGraph) -> None:
         """Call LangGraph get_graph method."""
         self.lc_graph = compiled_graph.get_graph()
+
+    def ex_tool(self, fun: str) -> callable:
+        """Call a function from helper.module by name."""
+        target = self.module
+        for part in fun.split("."):
+            target = getattr(target, part, None)
+            if target is None:
+                raise AttributeError(f"{fun} not found in {self.module.__name__}")
+        if not callable(target):
+            raise TypeError(f"{fun} is not callable")
+        return target

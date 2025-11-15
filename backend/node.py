@@ -95,10 +95,12 @@ class Node:
     def normalize_node(node):
         is_system_node = node.id.startswith("__") and node.id.endswith("__")
         node_type = NodeType.SYSTEM if is_system_node else NodeType.STEP
+        fun = getattr(node.data, "name", None)
+
         return Node(
             id=node.id,
             name=node.id,
-            data="Callable()",
+            data=fun,
             metadata={},
             node_type=node_type,
         )
