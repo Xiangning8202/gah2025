@@ -55,6 +55,7 @@ class Node:
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Executes the underlying LangGraph step."""
+        print(f"data: {self.data}, typeof: {type(self.data)}")
         if self.data is None or not callable(self.data):
             raise ValueError(f"Node {self.name} has no callable data")
 

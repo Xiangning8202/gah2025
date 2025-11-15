@@ -42,6 +42,7 @@ class CallableGraphHelper:
 
 def build_callable_graph(compiled_graph: CompiledStateGraph) -> None:
     helper = CallableGraphHelper(compiled_graph)
+    print(helper.graph)
     graph = Graph(helper.graph)
     print(f"{graph.to_dict()}\n\n")
     print(graph.nodes)

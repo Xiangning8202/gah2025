@@ -33,32 +33,13 @@ class Graph:
 
         for edge in graph.edges:
             try:
-                if isinstance(edge, tuple) or hasattr(edge, "__getitem__"):
-                    source_id, target_id = edge[0], edge[1]
-                    conditional = getattr(edge, "conditional", False)
-                    condition = getattr(edge, "condition", None)
-                    metadata = getattr(edge, "metadata", {})
-
-                elif hasattr(edge, "source") and hasattr(edge, "target"):
-                    source_id, target_id = edge.source, edge.target
-                    conditional = getattr(edge, "conditional", False)
-                    condition = getattr(edge, "condition", None)
-                    metadata = getattr(edge, "metadata", {})
-
-                else:
-                    raise ValueError(f"Unknown edge format: {type(edge)} - {edge}")
-
-                self.edges.append(
-                    Edge(
-                        source=source_id,
-                        target=target_id,
-                        conditional=conditional,
-                        condition=condition,
-                        metadata=metadata,
-                    )
+                source, target, data, conditional, condition, metadata = (
+                    Edge.normalize_edge(edge)
                 )
-
-            except (IndexError, TypeError) as e:
+                self.edges.append(
+                    Edge(source, target, data, conditional, condition, metadata)
+                )
+            except Exception as e:
                 raise ValueError(
                     f"Cannot convert edge to Edge model: {edge} (error: {e})"
                 )
