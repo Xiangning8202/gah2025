@@ -89,9 +89,9 @@ function GraphEditor() {
         console.log('Loading graph from backend...');
         try {
           const loadResponse = await graphApiClient.loadGraph({
-            file_path: '../backend/graph_2.py',
-            graph_name: 'Graph 2 Workflow',
-            description: 'Graph 2 loaded from backend'
+            file_path: '../backend/graph_3.py',
+            graph_name: 'Graph 3 Workflow',
+            description: 'Graph 3 loaded from backend'
           });
           graphData = loadResponse.structure;
           loadedGraphId = loadResponse.graph_id;
