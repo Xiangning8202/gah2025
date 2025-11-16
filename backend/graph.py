@@ -1,9 +1,9 @@
 from typing import Dict, List, Any, Set
 import uuid
 from graph_helper import LangGraphCtxHelper
-
 from node import Node
 from edge import Edge
+from collections import deque
 
 
 class CallableGraph:
@@ -84,12 +84,12 @@ class CallableGraph:
         if not self.start_nodes:
             raise RuntimeError("No start node detected")
 
-        queue: List[str] = list(self.start_nodes)
+        queue = deque(self.start_nodes)
 
         self.execution_history.clear()
 
         while queue:
-            node_id = queue.pop(0)
+            node_id = queue.popleft()
             if node_id == "__start__":
                 next_nodes = [e.target for e in self.edges if e.source == node_id]
             else:
