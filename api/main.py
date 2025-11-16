@@ -7,6 +7,7 @@ from routers import (
     testing_router,
     executions_router,
     analysis_router,
+    attack_router,
 )
 
 app = FastAPI(
@@ -35,6 +36,7 @@ app.include_router(nodes_router)
 app.include_router(testing_router)
 app.include_router(executions_router)
 app.include_router(analysis_router)
+app.include_router(attack_router)
 
 
 @app.get("/")

@@ -171,6 +171,81 @@ class GraphService:
         # For now, return empty graph
         return self._create_empty_graph(name, description)
 
+    def load_graph_from_module(
+        self, 
+        file_path: str, 
+        graph_name: str, 
+        description: Optional[str] = None,
+        build_kwargs: Optional[Dict[str, Any]] = None
+    ) -> GraphLoadResponse:
+        """
+        Load a graph from a module file with optional build arguments.
+        
+        This is useful for graphs that need parameters (like attack graphs with target URLs).
+        
+        Args:
+            file_path: Path to the Python file containing the graph
+            graph_name: Name for the graph
+            description: Optional description
+            build_kwargs: Optional kwargs to pass to the build() function
+            
+        Returns:
+            GraphLoadResponse with the loaded graph details
+        """
+        graph_id = str(uuid.uuid4())
+        build_kwargs = build_kwargs or {}
+        
+        path = Path(file_path)
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Load the module from file
+        spec = importlib.util.spec_from_file_location("user_graph", path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Could not load module from {file_path}")
+
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["user_graph"] = module
+        spec.loader.exec_module(module)
+
+        # Look for a build() function in the module
+        if hasattr(module, 'build') and callable(module.build):
+            try:
+                print(f"Found build() function, calling with kwargs: {build_kwargs}")
+                compiled_graph = module.build(**build_kwargs)
+                
+                # Create CallableGraph from the compiled graph
+                helper = LangGraphCtxHelper(compiled_graph, module=module, filepath=str(path.absolute()))
+                graph = CallableGraph(helper, graph_name, description or "")
+                
+                # Store graph
+                self.graphs[graph_id] = {
+                    "id": graph_id,
+                    "graph": graph,
+                    "name": graph_name,
+                    "description": description,
+                    "created_at": datetime.now(),
+                    "last_executed": None,
+                }
+
+                # Convert to response
+                structure = self._graph_to_structure(graph)
+                
+                return GraphLoadResponse(
+                    graph_id=graph_id,
+                    name=graph_name,
+                    description=description,
+                    structure=structure,
+                    created_at=self.graphs[graph_id]["created_at"],
+                )
+            except Exception as e:
+                print(f"Error calling build() function: {e}")
+                import traceback
+                traceback.print_exc()
+                raise ValueError(f"Failed to build graph: {e}")
+        else:
+            raise ValueError(f"Module does not have a build() function: {file_path}")
+
     def _create_empty_graph(self, name: str, description: Optional[str]) -> CallableGraph:
         """Create an empty graph structure."""
         # Create a minimal helper for an empty graph
