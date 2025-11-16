@@ -1,7 +1,14 @@
 from typing import Dict, Any
 import httpx
 import logging
-from models.node import Node, NodeType
+import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+from node import Node, NodeType
 
 logger = logging.getLogger(__name__)
 
