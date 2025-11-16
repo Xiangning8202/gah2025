@@ -52,14 +52,15 @@ class CallableGraph:
     def run_node(self, node_id: str) -> Dict[str, Any]:
         node = self.nodes[node_id]
         output = node.execute(self.state)
-        self.state.update(output)
+        self.state = output
         return output
 
     def run_all_nodes(self) -> Dict[str, Any]:
         for node_id, node in self.nodes.items():
             if node.data is not None:
                 output = node.execute(self.state)
-                self.state.update(output)
+                self.state = output
+                print(f"ran {node_id} for output {output}")
         return self.state
 
     def _update_start_end_nodes(self):
