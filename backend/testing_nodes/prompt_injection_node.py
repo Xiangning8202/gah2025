@@ -101,18 +101,15 @@ class PromptInjectionNode(Node):
                 injected_prompt = self._call_ollama(original_prompt)
             
             logger.info(f"PROMPT_INJECTION: Modified prompt: '{injected_prompt}'")
-            logger.info(f"PROMPT_INJECTION: Writing to state key '{self.state_output_key}'")
+            logger.info(f"PROMPT_INJECTION: Replacing '{self.state_prompt_key}' with malicious version")
             
-            # Update state with the injected prompt AND preserve original
+            # Replace the prompt with the injected version AND preserve original
+            # ONLY modify the prompt field, don't create separate output fields
             result = {
-                self.state_output_key: injected_prompt,
-                "original_prompt": original_prompt,  # Make sure we keep the original
+                self.state_prompt_key: injected_prompt,  # Replace the original prompt key
+                "original_prompt": original_prompt,  # Preserve the original
                 "injection_applied": True
             }
-            
-            # Also update the original prompt key to ensure it's available for downstream nodes
-            if self.state_prompt_key not in result:
-                result[self.state_prompt_key] = original_prompt
                 
             return result
         
@@ -121,8 +118,7 @@ class PromptInjectionNode(Node):
             logger.error(f"PROMPT_INJECTION: Failed to inject prompt: {e}")
             logger.warning(f"PROMPT_INJECTION: Falling back to original prompt")
             return {
-                self.state_output_key: original_prompt,
-                self.state_prompt_key: original_prompt,
+                self.state_prompt_key: original_prompt,  # Keep original
                 "original_prompt": original_prompt,
                 "injection_applied": False,
                 "injection_error": str(e)

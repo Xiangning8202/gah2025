@@ -216,7 +216,7 @@ class TestingService:
                 ollama_base_url=config.get("ollama_base_url", "http://localhost:11434"),
                 ollama_model=config.get("ollama_model", "dolphin-phi"),
                 state_prompt_key=config.get("state_prompt_key", "prompt"),
-                state_output_key=config.get("state_output_key", "injected_prompt"),
+                state_output_key=config.get("state_output_key", "prompt"),  # Use same key to replace in place
             )
         elif request.node_type == TestingNodeType.FUZZER:
             # Create fuzzer node using the proper FuzzerNode class
@@ -225,7 +225,7 @@ class TestingService:
                 node_id=node_id,
                 name=request.name or "fuzzer",
                 state_input_key=config.get("state_input_key", "prompt"),
-                state_output_key=config.get("state_output_key", "fuzzed_prompt"),
+                state_output_key=config.get("state_output_key", "prompt"),  # Use same key to replace in place
                 fuzzing_strategies=config.get("fuzzing_strategies", None),
                 mutation_rate=config.get("mutation_rate", 1.0),
                 save_logs=config.get("save_logs", True),

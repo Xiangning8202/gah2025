@@ -140,7 +140,16 @@ class FuzzerNode(Node):
         self.latest_run = test_record
 
         logger.info("=== FUZZER NODE: Fuzzing complete ===")
-        return {self.state_output_key: selected_fuzz["fuzzed_text"]}
+        logger.info(f"FUZZER: Replacing '{self.state_input_key}' with fuzzed version")
+        
+        # Replace the original prompt with the fuzzed version AND preserve original
+        # ONLY modify the prompt field, don't create separate output fields
+        return {
+            self.state_input_key: selected_fuzz["fuzzed_text"],  # Replace the original prompt
+            "original_prompt": input_text,  # Preserve the original
+            "fuzzing_applied": True,
+            "fuzzing_strategy": selected_fuzz["strategy"]
+        }
 
     def fuzz(self, input_text: str) -> List[Dict[str, Any]]:
         """Apply all enabled fuzzing strategies to input text."""
