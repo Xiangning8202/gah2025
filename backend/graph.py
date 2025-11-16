@@ -22,6 +22,7 @@ class CallableGraph:
 
         self.nodes: Dict[str, Node] = {}
         self.edges: List[Edge] = []
+        self.branches: Dict[str, List[callable]] = {}
 
         for node in graph.nodes.values():
             node = Node.normalize_node(node)
@@ -32,6 +33,10 @@ class CallableGraph:
         for edge in graph.edges:
             edge = Edge.normalize_edge(edge)
             self.edges.append(edge)
+
+        for node_id, fun in helper.branches:
+            func = helper.ex_tool(fun)  # turn string into callable
+            self.branches.setdefault(node_id, []).append(func)
 
         # Additional fields
         self.id: str = str(uuid.uuid4())
@@ -49,18 +54,54 @@ class CallableGraph:
         self.execution_history: List[Dict[str, Any]] = []
         self.is_running: bool = False
 
-    def run_node(self, node_id: str) -> Dict[str, Any]:
+    def run_node(self, node_id: str) -> List[str]:
         node = self.nodes[node_id]
+        if node.data is None:
+            # nothing to execute
+            return []
+
         output = node.execute(self.state)
         self.state = output
-        return output
+        print(f"ran {node_id} -> {output}")
+
+        next_nodes = []
+
+        # conditional branches
+        if node_id in self.branches:
+            for router in self.branches[node_id]:
+                print(f"branch says next is: {router(self.state)}")
+                next_nodes.append(router(self.state))
+        else:
+            # static edges
+            for edge in self.edges:
+                if edge.source == node_id:
+                    print(f"edge says next is {edge.target}")
+                    next_nodes.append(edge.target)
+
+        return next_nodes
 
     def run_all_nodes(self) -> Dict[str, Any]:
-        for node_id, node in self.nodes.items():
-            if node.data is not None:
-                output = node.execute(self.state)
-                self.state = output
-                print(f"ran {node_id} for output {output}")
+        if not self.start_nodes:
+            raise RuntimeError("No start node detected")
+
+        queue: List[str] = list(self.start_nodes)
+
+        self.execution_history.clear()
+
+        while queue:
+            node_id = queue.pop(0)
+            if node_id == "__start__":
+                next_nodes = [e.target for e in self.edges if e.source == node_id]
+            else:
+                next_nodes = self.run_node(node_id)
+                self.execution_history.append(
+                    {
+                        "node_id": node_id,
+                        "state": dict(self.state),
+                    }
+                )
+            queue.extend(next_nodes)
+
         return self.state
 
     def _update_start_end_nodes(self):

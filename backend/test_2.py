@@ -47,9 +47,9 @@ graph.add_edge("step3", END)
 
 
 def build():
-    compiled_graph = graph.compile()
-    build_callable_graph(compiled_graph)
-    print(compiled_graph.invoke({}))
+    # print(graph.compile().get_graph().draw_ascii())
+    build_callable_graph(graph)
+    # print(graph.compile().invoke({}))
 
 
 if __name__ == "__main__":

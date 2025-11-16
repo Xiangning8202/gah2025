@@ -2,20 +2,23 @@ import os
 import sys
 import inspect
 import importlib.util
-from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.graph import Graph as LangChainGraph
 from types import ModuleType
+from langgraph.graph import StateGraph
+from typing import List
 
 
 class LangGraphCtxHelper:
-    def __init__(self, compiled_graph: CompiledStateGraph):
+    def __init__(self, graph: StateGraph):
         self.filepath: str = None  # fully resolved filepath
         self.module_name: str = None  # module name (ie; filename w/o extension)
-        self.lc_graph: LangChainGraph = None  # langgraph graph
         self.module: ModuleType = None  # module
+        self.raw_graph: StateGraph = graph  # langgraph StateGraph (uncompiled)
+        self.lc_graph: LangChainGraph = None  # compiled LC graph for nodes/edges
+        self.branches: List[tuple[str, str]] = []
 
         self.load_module()
-        self.extract_graph(compiled_graph)
+        self.extract_graph_and_branches()
 
     def get_filepath(self) -> None:
         """Inspect call stack for full path of call location."""
@@ -35,9 +38,15 @@ class LangGraphCtxHelper:
         spec.loader.exec_module(mod)
         self.module = mod
 
-    def extract_graph(self, compiled_graph: CompiledStateGraph) -> None:
-        """Call LangGraph get_graph method."""
-        self.lc_graph = compiled_graph.get_graph()
+    def extract_graph_and_branches(self) -> None:
+        """Call LangGraph get_graph method and reformat branches."""
+        compiled = self.raw_graph.compile()
+        self.lc_graph = compiled.get_graph()
+        print(f"lc_graph edges: {self.lc_graph.edges}")
+        for node_id, router_map in self.raw_graph.branches.items():
+            for func_name in router_map.keys():
+                self.branches.append((node_id, func_name))
+
         print(self.lc_graph.draw_ascii())
 
     def ex_tool(self, fun: str) -> callable:
