@@ -4,6 +4,13 @@ Example usage of the PromptInjectionNode in a LangGraph workflow.
 This demonstrates how to inject a prompt injection testing node into an existing graph.
 """
 
+import sys
+from pathlib import Path
+
+# Add parent directory to path so we can import from models and testing_nodes
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
 import logging
 from langgraph.graph import StateGraph, START, END
 from testing_nodes.prompt_injection_node import create_prompt_injection_node
@@ -11,7 +18,6 @@ from testing_nodes.prompt_injection_node import create_prompt_injection_node
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 
 def example_workflow():
     """Example of using PromptInjectionNode in a workflow."""
@@ -30,30 +36,33 @@ def example_workflow():
     injection_node = create_prompt_injection_node(
         node_id="injection_test",
         name="prompt_injection_test",
-        ollama_model="dolphin-phi",  # or any other model you have available
-        state_prompt_key="prompt",  # Read from "prompt" key
-        state_output_key="injected_prompt"  # Write to "injected_prompt" key
+        ollama_model="dolphin-phi",
+        state_prompt_key="prompt",
+        state_output_key="injected_prompt",
+        use_mock=False
     )
     
     # Step 3: Process the (potentially injected) prompt
     def process_prompt(state):
         logger.info("=== PROCESS_PROMPT: Starting to process prompt ===")
-        # This would normally call your main LLM
         prompt = state.get("injected_prompt", state.get("prompt"))
         logger.info(f"PROCESS_PROMPT: Input prompt: '{prompt}'")
         logger.info("PROCESS_PROMPT: Making call to model (simulated)...")
         
-        response = f"Processing: {prompt}"
+        # Simulate model processing
+        response = f"Model response to: {prompt}"
         logger.info(f"PROCESS_PROMPT: Received response from model: '{response}'")
         logger.info("PROCESS_PROMPT: Returning final response")
         return {
-            "final_response": response,
+            "final_result": response,
+            "original_prompt": state.get("prompt"),
+            "injected_prompt": state.get("injected_prompt"),
             "completed": True
         }
     
     # Add nodes to the graph
     graph.add_node("generate", generate_prompt)
-    graph.add_node("inject", injection_node.data)  # Use the node's data function
+    graph.add_node("inject", injection_node.data)
     graph.add_node("process", process_prompt)
     
     # Connect the nodes
@@ -62,7 +71,6 @@ def example_workflow():
     graph.add_edge("inject", "process")
     graph.add_edge("process", END)
     
-    # Compile and return
     return graph.compile()
 
 
@@ -89,27 +97,41 @@ def example_with_custom_injection():
     injection_node = create_prompt_injection_node(
         node_id="custom_injection",
         injection_instruction=custom_injection,
-        ollama_model="dolphin-phi"
+        ollama_model="dolphin-phi",
+        state_prompt_key="prompt",
+        state_output_key="injected_prompt",
+        use_mock=False  # Make sure this is True to avoid Ollama 404 errors
     )
     
-    def final_step(state):
-        logger.info("=== FINAL_STEP: Processing final results ===")
+    def process_results(state):
+        logger.info("=== PROCESS_RESULTS: Processing final results ===")
         injected_prompt = state.get("injected_prompt")
-        logger.info(f"FINAL_STEP: Retrieved injected prompt: '{injected_prompt}'")
-        logger.info("FINAL_STEP: Returning final result")
-        return {"result": injected_prompt}
+        original_prompt = state.get("prompt")
+        logger.info(f"PROCESS_RESULTS: Original: '{original_prompt}'")
+        logger.info(f"PROCESS_RESULTS: Injected: '{injected_prompt}'")
+        
+        # Simulate what would happen with this injected prompt
+        logger.info("PROCESS_RESULTS: Simulating model response to injected prompt...")
+        simulated_response = f"Would process: {injected_prompt}"
+        
+        logger.info("PROCESS_RESULTS: Returning final result")
+        return {
+            "final_result": simulated_response,
+            "original_prompt": original_prompt,
+            "injected_prompt": injected_prompt,
+            "completed": True
+        }
     
-    graph.add_node("start", initial_step)
+    graph.add_node("generate", initial_step)
     graph.add_node("inject", injection_node.data)
-    graph.add_node("end", final_step)
+    graph.add_node("process", process_results)
     
-    graph.add_edge(START, "start")
-    graph.add_edge("start", "inject")
-    graph.add_edge("inject", "end")
-    graph.add_edge("end", END)
+    graph.add_edge(START, "generate")
+    graph.add_edge("generate", "inject")
+    graph.add_edge("inject", "process")
+    graph.add_edge("process", END)
     
     return graph.compile()
-
 
 def example_integration_with_existing_graph(existing_graph: StateGraph, inject_after: str):
     """
