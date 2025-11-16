@@ -437,14 +437,9 @@ class ExecutionService:
                 current_layer = list(ready_nodes)
                 ready_nodes.clear()
                 
-                # Execute all nodes in current layer concurrently
-                layer_events = []
-                
+                # FIRST: Send all node_start events for this layer
                 for node_id in current_layer:
                     node = graph.nodes[node_id]
-                    node_start_time = time.time()
-                    
-                    # Send node start event
                     yield StreamExecutionEvent(
                         event_type="node_start",
                         execution_id=execution_id,
@@ -455,6 +450,12 @@ class ExecutionService:
                         input_state=graph.state.copy(),
                         message=f"Starting execution of node: {node.name}",
                     )
+                
+                # SECOND: Execute all nodes in this layer and collect results
+                layer_results = []
+                for node_id in current_layer:
+                    node = graph.nodes[node_id]
+                    node_start_time = time.time()
                     
                     try:
                         # Execute the node
@@ -463,26 +464,13 @@ class ExecutionService:
                         
                         node_duration = (time.time() - node_start_time) * 1000
                         
-                        # Send node complete event
-                        yield StreamExecutionEvent(
-                            event_type="node_complete",
-                            execution_id=execution_id,
-                            graph_id=graph_id,
-                            timestamp=datetime.now(),
-                            node_id=node_id,
-                            node_name=node.name,
-                            status="success",
-                            input_state=output_state,
-                            output_state=output_state,
-                            duration_ms=node_duration,
-                            message=f"Node {node.name} executed successfully",
-                        )
-                        
-                        execution_history.append({
+                        layer_results.append({
                             "node_id": node_id,
                             "node_name": node.name,
                             "status": "success",
+                            "output_state": output_state,
                             "duration_ms": node_duration,
+                            "error": None,
                         })
                         
                         completed_nodes.add(node_id)
@@ -491,30 +479,42 @@ class ExecutionService:
                         node_duration = (time.time() - node_start_time) * 1000
                         error_msg = str(e)
                         
-                        # Send node error event
-                        yield StreamExecutionEvent(
-                            event_type="node_complete",
-                            execution_id=execution_id,
-                            graph_id=graph_id,
-                            timestamp=datetime.now(),
-                            node_id=node_id,
-                            node_name=node.name,
-                            status="error",
-                            duration_ms=node_duration,
-                            error=error_msg,
-                            message=f"Error executing node {node.name}: {error_msg}",
-                        )
-                        
-                        execution_history.append({
+                        layer_results.append({
                             "node_id": node_id,
                             "node_name": node.name,
                             "status": "error",
+                            "output_state": None,
                             "duration_ms": node_duration,
                             "error": error_msg,
                         })
                         
                         status = "error"
-                        completed_nodes.add(node_id)  # Mark as completed even if failed
+                        completed_nodes.add(node_id)
+                
+                # THIRD: Send all node_complete events for this layer
+                for result in layer_results:
+                    yield StreamExecutionEvent(
+                        event_type="node_complete",
+                        execution_id=execution_id,
+                        graph_id=graph_id,
+                        timestamp=datetime.now(),
+                        node_id=result["node_id"],
+                        node_name=result["node_name"],
+                        status=result["status"],
+                        input_state=result["output_state"] if result["output_state"] else {},
+                        output_state=result["output_state"] if result["output_state"] else {},
+                        duration_ms=result["duration_ms"],
+                        error=result["error"],
+                        message=f"Node {result['node_name']} executed successfully" if result["status"] == "success" else f"Error executing node {result['node_name']}: {result['error']}",
+                    )
+                    
+                    execution_history.append({
+                        "node_id": result["node_id"],
+                        "node_name": result["node_name"],
+                        "status": result["status"],
+                        "duration_ms": result["duration_ms"],
+                        "error": result.get("error"),
+                    })
                 
                 # Find next layer of nodes that are now ready
                 for node_id in node_ids:
