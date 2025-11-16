@@ -42,14 +42,16 @@ graph.add_node("step3", step3)
 # edges
 graph.add_edge(START, "step1")
 graph.add_edge("step1", "step2")
-graph.add_conditional_edges("step2", route_after_step2)
+graph.add_conditional_edges(
+    "step2", route_after_step2, {"step2": "step2", "step3": "step3"}
+)
 graph.add_edge("step3", END)
 
 
 def build():
-    # print(graph.compile().get_graph().draw_ascii())
+    print(graph.compile().get_graph().draw_mermaid())
     build_callable_graph(graph)
-    # print(graph.compile().invoke({}))
+    print(graph.compile().invoke({}))
 
 
 if __name__ == "__main__":

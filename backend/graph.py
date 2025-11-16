@@ -54,6 +54,19 @@ class CallableGraph:
         self.execution_history: List[Dict[str, Any]] = []
         self.is_running: bool = False
 
+    def merge_state(self, state: dict, output: dict) -> dict:
+        for k, v in output.items():
+            if k == "logs":
+                # append instead of overwrite
+                state.setdefault("logs", []).extend(v)
+            elif k == "data":
+                # merge dicts instead of overwrite
+                state.setdefault("data", {}).update(v)
+            else:
+                # overwrite scalars
+                state[k] = v
+        return state
+
     def run_node(self, node_id: str) -> List[str]:
         node = self.nodes[node_id]
         if node.data is None:
@@ -61,7 +74,8 @@ class CallableGraph:
             return []
 
         output = node.execute(self.state)
-        self.state = output
+        self.state = self.merge_state(self.state, output)
+
         print(f"ran {node_id} -> {output}")
 
         next_nodes = []

@@ -47,7 +47,7 @@ class LangGraphCtxHelper:
             for func_name in router_map.keys():
                 self.branches.append((node_id, func_name))
 
-        print(self.lc_graph.draw_ascii())
+        print(self.lc_graph.draw_mermaid())
 
     def ex_tool(self, fun: str) -> callable:
         """Return a callable from helper.module by name."""

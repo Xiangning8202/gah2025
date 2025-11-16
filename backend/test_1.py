@@ -25,10 +25,9 @@ graph.add_edge("step2", END)  # step2 -> END
 
 
 def build():
-    compiled_graph = graph.compile()
-    build_callable_graph(compiled_graph)
+    build_callable_graph(graph)
     print("\nvs\n")
-    print(compiled_graph.invoke({}))
+    print(graph.compile().invoke({}))
 
 
 if __name__ == "__main__":
