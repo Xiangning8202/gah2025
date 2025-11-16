@@ -28,6 +28,7 @@ class Edge:
 
     @staticmethod
     def normalize_edge(edge):
+        # print(f"working with edge: {edge}")
         if isinstance(edge, tuple) or hasattr(edge, "__getitem__"):
             return Edge(
                 edge[0],
