@@ -1,9 +1,16 @@
 import pandas as pd
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import os
 from log import LoggerHelper
+from enum import Enum
 
 log = LoggerHelper("dataset")
+
+
+class Dataset(Enum):
+    BENIGN = "benign"
+    HARMFUL = "harmful"
+    JAILBREAK = "jailbreak"
 
 
 class DatasetHelper:
@@ -44,3 +51,14 @@ class DatasetHelper:
 
     def jailbreak_prompts(self) -> List[str]:
         return self.jailbreak_df["prompt"].tolist()
+
+
+def get_dataset(helper: DatasetHelper, dataset: Dataset) -> Tuple[List[str], List[str]]:
+    if dataset == Dataset.BENIGN:
+        return helper.benign_df["id"].tolist(), helper.benign_questions()
+    elif dataset == Dataset.HARMFUL:
+        return helper.harmful_df["id"].tolist(), helper.harmful_questions()
+    elif dataset == Dataset.JAILBREAK:
+        return helper.jailbreak_df["id"].tolist(), helper.jailbreak_prompts()
+    else:
+        raise ValueError(f"Unknown dataset {dataset}")

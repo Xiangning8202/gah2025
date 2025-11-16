@@ -1,12 +1,16 @@
 from dataset import DatasetHelper
-from attack import run_benign
 from target import Target
+from attack import run_dataset, run_dataset_p
+from store import Dataset
 
 
 def main():
     dataset = DatasetHelper()
-    benign_asr = run_benign(dataset, Target.ELEPHANT)
-    print(f"Benign ASR: {benign_asr}")
+    harmful_asr = run_dataset_p(
+        dataset, Dataset.HARMFUL, Target.BEAR, expected_refusal=True
+    )
+
+    print(harmful_asr)
 
 
 if __name__ == "__main__":
