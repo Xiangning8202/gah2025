@@ -239,6 +239,52 @@ function GraphEditor() {
     );
   }, [executingNodeIds, completedNodeIds, setNodes]);
 
+  // Update edge styles when executing - animate edges connected to executing nodes
+  useEffect(() => {
+    if (executingNodeIds.length > 0) {
+      setEdges((eds) =>
+        eds.map((edge) => {
+          // Store original style if not already stored
+          const originalStyle = (edge as any).originalStyle || edge.style;
+          
+          // Animate edges that connect TO currently executing nodes
+          if (executingNodeIds.includes(edge.target)) {
+            return {
+              ...edge,
+              animated: true,
+              style: {
+                ...originalStyle,
+                stroke: '#3b82f6',
+                strokeWidth: 3,
+                strokeDasharray: '5, 5', // Dotted line pattern
+              },
+              originalStyle,
+            } as any;
+          }
+          return {
+            ...edge,
+            animated: false,
+            style: originalStyle,
+            originalStyle,
+          } as any;
+        })
+      );
+    } else {
+      // Reset all edge styles when not executing
+      setEdges((eds) =>
+        eds.map((edge) => {
+          const originalStyle = (edge as any).originalStyle || edge.style;
+          return {
+            ...edge,
+            animated: false,
+            style: originalStyle,
+            originalStyle,
+          } as any;
+        })
+      );
+    }
+  }, [executingNodeIds, setEdges]);
+
   // Define custom node types
   const nodeTypes = useMemo(() => ({
     promptInject: PromptInjectNode,
@@ -253,29 +299,6 @@ function GraphEditor() {
   const handleNodeAdd = useCallback((nodeData: { id: string; title: string; icon: string; type: string; description?: string; nodeType?: string }) => {
     handleNodeAddBase(nodeData, setNodes);
   }, [handleNodeAddBase, setNodes]);
-
-  // Animate edges when executing - apply CSS class
-  useEffect(() => {
-    setEdges((eds) =>
-      eds.map((edge) => {
-        const classes = edge.className
-          ?.split(' ')
-          .filter(Boolean)
-          .filter((cls) => cls !== 'edge-progress') || [];
-        const isActive = executingNodeIds.includes(edge.target);
-        const nextClassName = isActive
-          ? [...classes, 'edge-progress'].join(' ')
-          : classes.length > 0
-          ? classes.join(' ')
-          : undefined;
-        return {
-          ...edge,
-          animated: isActive,
-          className: nextClassName,
-        };
-      })
-    );
-  }, [executingNodeIds, setEdges]);
 
   return (
     <div style={{ width: '100%', flex: 1, position: 'relative', minHeight: 0 }}>
@@ -338,7 +361,7 @@ function GraphEditor() {
           console.log('[Page] Number of edges:', edges.length);
           console.log('[Page] Current graph ID:', currentGraphId);
           handleRun(selectedNode, nodes, edges, currentGraphId);
-        }}
+        }} 
         isExecuting={isExecuting}
       />
 
@@ -372,14 +395,7 @@ function GraphEditor() {
 
 export default function TestPage() {
   return (
-    <div
-      style={{
-        width: '100%',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <ReactFlowProvider>
         <GraphEditor />
       </ReactFlowProvider>

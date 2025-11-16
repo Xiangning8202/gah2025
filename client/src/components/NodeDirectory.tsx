@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { graphApiClient, TestingNodeTemplate } from '@/lib/api/graphApi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Search, Loader2 } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface NodeDirectoryProps {
   isOpen: boolean;
@@ -15,7 +18,6 @@ export default function NodeDirectory({ isOpen, onClose, onNodeAdd }: NodeDirect
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch testing node templates from API
   useEffect(() => {
     if (isOpen && testingNodes.length === 0) {
       setIsLoading(true);
@@ -34,15 +36,12 @@ export default function NodeDirectory({ isOpen, onClose, onNodeAdd }: NodeDirect
     }
   }, [isOpen, testingNodes.length]);
 
-  if (!isOpen) return null;
-
   const allNodes = testingNodes.map(template => ({
     id: template.node_type,
     title: template.display_name,
     description: template.description,
     icon: template.icon,
     nodeType: template.node_type,
-    color: 'bg-gray-50'
   }));
 
   const filteredNodes = searchQuery
@@ -53,64 +52,112 @@ export default function NodeDirectory({ isOpen, onClose, onNodeAdd }: NodeDirect
     : allNodes;
 
   return (
-    <div className="fixed left-8 top-40 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-40">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-800">Nodes</h2>
-          <button
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
-            className="p-1 hover:bg-gray-200 rounded-lg transition-colors"
-            aria-label="Close"
-          >
-            <span className="text-xl text-gray-600">×</span>
-          </button>
-        </div>
-      </div>
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-100"
+          />
 
-      {/* Nodes List */}
-      <div className="overflow-y-auto max-h-[calc(60vh-200px)] top-20">
-        <div className="p-2">
-          {isLoading && (
-            <div className="text-center p-4 text-gray-500">
-              Loading testing nodes...
-            </div>
-          )}
-          {error && (
-            <div className="text-center p-4 text-red-500">
-              {error}
-            </div>
-          )}
-          {!isLoading && !error && filteredNodes.map((node) => (
-            <button
-              key={node.id}
-              onClick={() => {
-                onNodeAdd({
-                  id: node.id,
-                  title: node.title,
-                  icon: node.icon,
-                  type: 'testing',
-                  description: node.description,
-                  nodeType: node.nodeType
-                });
-              }}
-              className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left border border-transparent hover:border-gray-200 mb-1"
-            >
-              <div className="flex-shrink-0 text-2xl">
-                {node.icon}
+          {/* Modal */}
+          <motion.div
+            initial={{ x: -100, opacity: 0, scale: 0.95 }}
+            animate={{ x: 0, opacity: 1, scale: 1 }}
+            exit={{ x: -100, opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed left-8 top-40 w-96 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden z-101"
+          >
+            {/* Header */}
+            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-linear-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                  Add Test Node
+                </h2>
+                <Button
+                  onClick={onClose}
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-gray-900 truncate">
-                  {node.title}
-                </h3>
-                <p className="text-xs text-gray-500 truncate">
-                  {node.description}
-                </p>
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Search nodes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                />
               </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+            </div>
+
+            {/* Nodes List */}
+            <div className="overflow-y-auto max-h-[60vh] p-3">
+              {isLoading && (
+                <div className="flex flex-col items-center justify-center py-12 text-zinc-500 dark:text-zinc-400">
+                  <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                  <p className="text-sm">Loading testing nodes...</p>
+                </div>
+              )}
+              
+              {error && (
+                <div className="text-center py-12 text-red-500 dark:text-red-400">
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+              
+              {!isLoading && !error && filteredNodes.length === 0 && (
+                <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+                  <p className="text-sm">No nodes found</p>
+                </div>
+              )}
+              
+              {!isLoading && !error && filteredNodes.map((node, index) => (
+                <motion.button
+                  key={node.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  onClick={() => {
+                    onNodeAdd({
+                      id: node.id,
+                      title: node.title,
+                      icon: node.icon,
+                      type: 'testing',
+                      description: node.description,
+                      nodeType: node.nodeType
+                    });
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all text-left border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 mb-2 group"
+                >
+                  <div className="shrink-0 text-2xl group-hover:scale-110 transition-transform">
+                    {node.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-0.5">
+                      {node.title}
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">
+                      {node.description}
+                    </p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

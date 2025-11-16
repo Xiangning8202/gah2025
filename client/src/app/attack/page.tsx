@@ -10,6 +10,8 @@ import {
   ReactFlowProvider,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { motion } from 'framer-motion';
+import { Loader2, X, ArrowRight } from 'lucide-react';
 
 import NodeDirectory from '@/components/NodeDirectory';
 import TopBar from '@/components/TopBar';
@@ -18,6 +20,7 @@ import PromptInjectNode from '@/components/PromptInjectNode';
 import GraphCanvas from '@/components/GraphCanvas';
 import GraphControls from '@/components/GraphControls';
 import NodeDataPanel from '@/components/NodeDataPanel';
+import { Button } from '@/components/ui/button';
 
 import { graphApiClient } from '@/lib/api/graphApi';
 import { convertApiGraphToReactFlow } from '@/lib/utils/apiGraphConverter';
@@ -262,151 +265,118 @@ function AttackEditor() {
   }, [targetUrl, setNodes, setEdges, fitView, addLog]);
 
   return (
-    <div style={{ width: '100%', flex: 1, position: 'relative', minHeight: 0 }}>
+    <div className="w-full flex-1 relative min-h-0">
       {/* URL Input Modal - shows when URL not set */}
       {!isUrlSet && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '2rem',
-            borderRadius: '12px',
-            minWidth: '500px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-          }}>
-            <h2 style={{ 
-              fontSize: '1.5rem', 
-              marginBottom: '1rem',
-              fontWeight: 600,
-              color: '#1f2937',
-            }}>
-              🎯 Attack Mode
-            </h2>
-            <p style={{ 
-              marginBottom: '1.5rem',
-              color: '#6b7280',
-              lineHeight: '1.5',
-            }}>
-              Enter the URL of the API endpoint you want to test. 
-              We'll create a simple graph that calls your API and allows you to add testing nodes on top.
-            </p>
-            
-            <label style={{ 
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 500,
-              color: '#374151',
-            }}>
-              Target API URL
-            </label>
-            <input
-              type="text"
-              value={targetUrl}
-              onChange={(e) => setTargetUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSetTargetUrl();
-                }
-              }}
-              placeholder="https://api.example.com/chat"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: urlError ? '2px solid #ef4444' : '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                marginBottom: '0.5rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={(e) => {
-                if (!urlError) {
-                  e.target.style.borderColor = '#3b82f6';
-                }
-              }}
-              onBlur={(e) => {
-                if (!urlError) {
-                  e.target.style.borderColor = '#d1d5db';
-                }
-              }}
-            />
-            
-            {urlError && (
-              <p style={{ 
-                color: '#ef4444', 
-                fontSize: '0.875rem',
-                marginBottom: '1rem',
-              }}>
-                {urlError}
-              </p>
-            )}
-
-            <button
-              onClick={handleSetTargetUrl}
-              disabled={isLoadingGraph}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                background: isLoadingGraph ? '#9ca3af' : '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                fontWeight: 500,
-                cursor: isLoadingGraph ? 'not-allowed' : 'pointer',
-                transition: 'background-color 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoadingGraph) {
-                  e.currentTarget.style.background = '#2563eb';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isLoadingGraph) {
-                  e.currentTarget.style.background = '#3b82f6';
-                }
-              }}
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000]"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="bg-white dark:bg-zinc-900 p-8 rounded-2xl min-w-[550px] shadow-2xl border border-zinc-200 dark:border-zinc-800"
             >
-              {isLoadingGraph ? 'Creating Graph...' : 'Create Attack Graph'}
-            </button>
-          </div>
-        </div>
+              <div className="flex items-center gap-3 mb-4">
+                <motion.div
+                  initial={{ rotate: -180, scale: 0 }}
+                  animate={{ rotate: 0, scale: 1 }}
+                  transition={{ type: "spring", delay: 0.2 }}
+                  className="p-3 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl"
+                >
+                  <span className="text-3xl">🎯</span>
+                </motion.div>
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+                    Attack Mode
+                  </h2>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    Deploy autonomous testing agents
+                  </p>
+                </div>
+              </div>
+              
+              <p className="mb-6 text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Enter the URL of the API endpoint you want to test. 
+                We'll create a graph that calls your API and allows you to add adversarial testing nodes.
+              </p>
+              
+              <label className="block mb-2 font-semibold text-zinc-700 dark:text-zinc-300">
+                Target API URL
+              </label>
+              <input
+                type="text"
+                value={targetUrl}
+                onChange={(e) => setTargetUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSetTargetUrl();
+                  }
+                }}
+                placeholder="https://api.example.com/chat"
+                className={`
+                  w-full px-4 py-3 rounded-xl text-base mb-2 outline-none transition-all
+                  bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50
+                  placeholder-zinc-400 dark:placeholder-zinc-500
+                  ${urlError 
+                    ? 'border-2 border-red-500 focus:ring-2 focus:ring-red-500' 
+                    : 'border border-zinc-200 dark:border-zinc-700 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20'
+                  }
+                `}
+              />
+              
+              {urlError && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-red-500 dark:text-red-400 text-sm mb-4 flex items-center gap-2"
+                >
+                  <span>⚠️</span>
+                  {urlError}
+                </motion.p>
+              )}
+
+              <Button
+                onClick={handleSetTargetUrl}
+                disabled={isLoadingGraph}
+                className="w-full py-6 rounded-xl text-base font-semibold bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
+              >
+                {isLoadingGraph ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Creating Graph...
+                  </>
+                ) : (
+                  <>
+                    Create Attack Graph
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            </motion.div>
+          </motion.div>
+        </>
       )}
 
       {/* Loading overlay */}
       {isLoadingGraph && isUrlSet && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '2rem',
-            borderRadius: '8px',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>⏳</div>
-            <div>Loading attack graph...</div>
-          </div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000]"
+        >
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            className="bg-white dark:bg-zinc-900 p-8 rounded-2xl text-center shadow-2xl"
+          >
+            <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-violet-600" />
+            <div className="text-zinc-900 dark:text-zinc-50 font-medium">Loading attack graph...</div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* React Flow Canvas */}
@@ -445,29 +415,24 @@ function AttackEditor() {
 
       {/* URL Display Badge */}
       {isUrlSet && (
-        <div style={{
-          position: 'absolute',
-          top: '80px',
-          left: '20px',
-          background: 'white',
-          padding: '0.75rem 1rem',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          zIndex: 10,
-        }}>
-          <span style={{ fontSize: '1.25rem' }}>🎯</span>
+        <motion.div
+          initial={{ x: -100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="absolute top-20 left-5 bg-white dark:bg-zinc-900 px-4 py-3 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-3 z-10 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95"
+        >
+          <div className="p-2 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg">
+            <span className="text-xl">🎯</span>
+          </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">
               Target API
             </div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1f2937' }}>
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 max-w-[200px] truncate">
               {targetUrl}
             </div>
           </div>
-          <button
+          <Button
             onClick={() => {
               setIsUrlSet(false);
               setTargetUrl('');
@@ -475,19 +440,14 @@ function AttackEditor() {
               setNodes([]);
               setEdges([]);
             }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#6b7280',
-              cursor: 'pointer',
-              fontSize: '1.25rem',
-              padding: '0.25rem',
-            }}
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 ml-2"
             title="Change URL"
           >
-            ✕
-          </button>
-        </div>
+            <X className="w-4 h-4" />
+          </Button>
+        </motion.div>
       )}
 
       {/* Node Directory Modal */}

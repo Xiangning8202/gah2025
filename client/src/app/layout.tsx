@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, IBM_Plex_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import { ThemeProvider } from "@/components/theme-provider";
 
-const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-ibm-plex-sans",
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["300"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "Gah2025",
-  description: "Great Agent Hack 2025"
+  title: "FlowLens - AI Agent Testing Platform",
+  description: "Test AI agents safely with visual graph editor, red-team testing, and real-time execution tracing"
 }
 
 export default function RootLayout({
@@ -20,28 +20,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${ibmPlexMono.variable} ${ibmPlexMono.className} antialiased`}
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: '#ffffff',
-        }}
-      >
-        <Navbar />
-        <main
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            width: '100%',
-          }}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${inter.className} antialiased`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
         >
-          {children}
-        </main>
+          <div className="flex flex-col min-h-screen">
+            <Navbar />
+            <main className="flex-1 flex flex-col w-full">
+              {children}
+            </main>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
