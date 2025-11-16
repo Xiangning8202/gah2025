@@ -56,17 +56,17 @@ export default function GraphCanvas({
         maxZoom={4}
         attributionPosition="bottom-right"
       >
-      <Background
-        variant={BackgroundVariant.Dots}
-        gap={20}
-        size={1}
-        color="#d1d5db"
-      />
-      <Controls
-        className="!bg-white !border !border-gray-200 !shadow-lg [&>button]:!bg-white [&>button]:!border-gray-200 [&>button:hover]:!bg-gray-100"
-        showInteractive={false}
-      />
-    </ReactFlow>
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={20}
+          size={1}
+          color="#d1d5db"
+        />
+        <Controls
+          className="!bg-white !border !border-gray-200 !shadow-lg [&>button]:!bg-white [&>button]:!border-gray-200 [&>button:hover]:!bg-gray-100"
+          showInteractive={false}
+        />
+      </ReactFlow>
     </div>
   );
 }

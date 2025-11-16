@@ -5,7 +5,10 @@ interface TopBarProps {
   isExecuting?: boolean;
 }
 
-export default function TopBar({ onRun, isExecuting = false }: TopBarProps) {
+export default function TopBar({
+  onRun,
+  isExecuting = false,
+}: TopBarProps) {
   const handleRunClick = () => {
     console.log('[TopBar] Run button clicked');
     console.log('[TopBar] isExecuting:', isExecuting);
@@ -19,10 +22,14 @@ export default function TopBar({ onRun, isExecuting = false }: TopBarProps) {
           onClick={handleRunClick}
           disabled={isExecuting}
           className={`${
-            isExecuting 
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-gray-800 hover:bg-gray-900'
+            isExecuting
+              ? 'bg-gray-500 cursor-not-allowed'
+              : 'cursor-pointer'
           } text-white px-5 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2`}
+          style={{
+            background: isExecuting ? '#6b7280' : '#111827',
+            opacity: isExecuting ? 0.6 : 1,
+          }}
         >
           {isExecuting ? (
             <>
