@@ -258,6 +258,7 @@ function GraphEditor() {
                 ...originalStyle,
                 stroke: '#3b82f6',
                 strokeWidth: 3,
+                strokeDasharray: '5, 5', // Dotted line pattern
               },
               originalStyle,
             } as any;

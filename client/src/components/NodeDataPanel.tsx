@@ -5,6 +5,8 @@ interface NodeData {
   node_id: string;
   node_name: string;
   current_state: Record<string, any>;
+  input?: Record<string, any>;
+  output?: Record<string, any>;
   execution_count: number;
   last_executed?: string;
 }
@@ -174,6 +176,68 @@ export default function NodeDataPanel({
                   </div>
                 </div>
               </div>
+
+              {/* Input */}
+              {nodeData.input && (
+                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                  <h3 className="text-sm font-semibold text-green-700 mb-3 flex items-center">
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                      />
+                    </svg>
+                    Input
+                  </h3>
+                  {Object.keys(nodeData.input).length === 0 ? (
+                    <p className="text-sm text-green-600 italic">No input data</p>
+                  ) : (
+                    <div className="bg-gray-900 rounded text-gray-100 p-3 overflow-x-auto">
+                      <pre className="text-xs font-mono">
+                        {JSON.stringify(nodeData.input, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Output */}
+              {nodeData.output && (
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <h3 className="text-sm font-semibold text-purple-700 mb-3 flex items-center">
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                    Output
+                  </h3>
+                  {Object.keys(nodeData.output).length === 0 ? (
+                    <p className="text-sm text-purple-600 italic">No output data</p>
+                  ) : (
+                    <div className="bg-gray-900 rounded text-gray-100 p-3 overflow-x-auto">
+                      <pre className="text-xs font-mono">
+                        {JSON.stringify(nodeData.output, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Current State */}
               <div className="bg-white rounded-lg p-4 border border-gray-200">

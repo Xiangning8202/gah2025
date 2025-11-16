@@ -383,6 +383,9 @@ export function useGraphEditor() {
                 source: 'System',
               });
             }
+            
+            // Add 2 second delay after each node completion
+            await new Promise(resolve => setTimeout(resolve, 2000));
             break;
 
           case 'complete':

@@ -18,14 +18,19 @@ export function convertApiGraphToReactFlow(graphStructure: GraphStructure): Reac
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
+  // Filter out __start__ and __end__ nodes
+  const filteredNodeEntries = Object.entries(graphStructure.nodes).filter(
+    ([nodeId]) => nodeId !== '__start__' && nodeId !== '__end__'
+  );
+
   // Convert nodes
-  Object.entries(graphStructure.nodes).forEach(([nodeId, nodeInfo], index) => {
+  filteredNodeEntries.forEach(([nodeId, nodeInfo], index) => {
     const icon = nodeInfo.metadata?.icon || '📦';
-    const isStart = nodeInfo.node_type === 'start' || nodeId === '__start__';
-    const isEnd = nodeInfo.node_type === 'end' || nodeId === '__end__';
+    const isStart = nodeInfo.node_type === 'start';
+    const isEnd = nodeInfo.node_type === 'end';
 
     // Calculate position in a circular layout
-    const totalNodes = Object.keys(graphStructure.nodes).length;
+    const totalNodes = filteredNodeEntries.length;
     const angle = (index / totalNodes) * 2 * Math.PI;
     const radius = 300;
     const centerX = 400;
@@ -66,8 +71,14 @@ export function convertApiGraphToReactFlow(graphStructure: GraphStructure): Reac
     });
   });
 
-  // Convert edges
+  // Convert edges, filtering out those connected to __start__ or __end__
   graphStructure.edges.forEach((edgeInfo, index) => {
+    // Skip edges connected to __start__ or __end__
+    if (edgeInfo.source === '__start__' || edgeInfo.source === '__end__' ||
+        edgeInfo.target === '__start__' || edgeInfo.target === '__end__') {
+      return;
+    }
+
     const edgeLabel = edgeInfo.metadata?.label || undefined;
 
     edges.push({

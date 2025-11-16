@@ -35,6 +35,8 @@ class NodeStateResponse(BaseModel):
     node_id: str
     node_name: str
     current_state: Dict[str, Any]
+    input: Optional[Dict[str, Any]] = None
+    output: Optional[Dict[str, Any]] = None
     execution_count: int
     last_executed: Optional[datetime] = None
 

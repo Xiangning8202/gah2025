@@ -457,6 +457,9 @@ class ExecutionService:
                     node = graph.nodes[node_id]
                     node_start_time = time.time()
                     
+                    # Capture input state before execution
+                    input_state = graph.state.copy()
+                    
                     try:
                         # Execute the node
                         output_state = node.execute(graph.state)
@@ -468,6 +471,7 @@ class ExecutionService:
                             "node_id": node_id,
                             "node_name": node.name,
                             "status": "success",
+                            "input_state": input_state,
                             "output_state": output_state,
                             "duration_ms": node_duration,
                             "error": None,
@@ -483,6 +487,7 @@ class ExecutionService:
                             "node_id": node_id,
                             "node_name": node.name,
                             "status": "error",
+                            "input_state": input_state,
                             "output_state": None,
                             "duration_ms": node_duration,
                             "error": error_msg,
@@ -493,6 +498,9 @@ class ExecutionService:
                 
                 # THIRD: Send all node_complete events for this layer
                 for result in layer_results:
+                    # Check if this is a start or end node
+                    is_start_or_end = result["node_id"].startswith("__") and result["node_id"].endswith("__")
+                    
                     yield StreamExecutionEvent(
                         event_type="node_complete",
                         execution_id=execution_id,
@@ -501,8 +509,8 @@ class ExecutionService:
                         node_id=result["node_id"],
                         node_name=result["node_name"],
                         status=result["status"],
-                        input_state=result["output_state"] if result["output_state"] else {},
-                        output_state=result["output_state"] if result["output_state"] else {},
+                        input_state=result["input_state"] if not is_start_or_end and result["input_state"] else {},
+                        output_state=result["output_state"] if not is_start_or_end and result["output_state"] else {},
                         duration_ms=result["duration_ms"],
                         error=result["error"],
                         message=f"Node {result['node_name']} executed successfully" if result["status"] == "success" else f"Error executing node {result['node_name']}: {result['error']}",
