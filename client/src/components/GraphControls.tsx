@@ -2,7 +2,7 @@
 
 import type { Node, Edge } from 'reactflow';
 import { Button } from './ui/button';
-import { Plus, Trash2, Info } from 'lucide-react';
+import { Plus, Trash2, Info, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface GraphControlsProps {
@@ -12,6 +12,7 @@ interface GraphControlsProps {
   edges: Edge[];
   onAddNodeClick: () => void;
   onDeleteNode: () => void;
+  onCloneNode?: () => void;
 }
 
 /**
@@ -24,6 +25,7 @@ export default function GraphControls({
   edges,
   onAddNodeClick,
   onDeleteNode,
+  onCloneNode,
 }: GraphControlsProps) {
   const isNodeConnected = draggedNode 
     ? edges.some(e => e.target === draggedNode.id) && edges.some(e => e.source === draggedNode.id)
@@ -47,7 +49,7 @@ export default function GraphControls({
         </Button>
       </motion.div>
 
-      {/* Delete Node Panel */}
+      {/* Node Actions Panel */}
       <AnimatePresence>
         {selectedNode && selectedNode.type === 'promptInject' && (
           <motion.div
@@ -61,16 +63,28 @@ export default function GraphControls({
               <Info className="w-4 h-4" />
               Test Node Selected
             </p>
-            <Button
-              onClick={onDeleteNode}
-              variant="destructive"
-              className="w-full rounded-lg flex items-center justify-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Delete Node</span>
-            </Button>
+            <div className="space-y-2">
+              {onCloneNode && (
+                <Button
+                  onClick={onCloneNode}
+                  variant="outline"
+                  className="w-full rounded-lg flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Clone Node</span>
+                </Button>
+              )}
+              <Button
+                onClick={onDeleteNode}
+                variant="destructive"
+                className="w-full rounded-lg flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Node</span>
+              </Button>
+            </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 text-center">
-              Or press <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-[10px]">Delete</kbd>
+              Press <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-[10px]">Delete</kbd> to delete
             </p>
           </motion.div>
         )}

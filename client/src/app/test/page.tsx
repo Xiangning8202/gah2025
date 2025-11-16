@@ -19,6 +19,10 @@ import GraphCanvas from '@/components/GraphCanvas';
 import GraphControls from '@/components/GraphControls';
 import NodeDataPanel from '@/components/NodeDataPanel';
 import AnalysisPanel from '@/components/AnalysisPanel';
+import GraphStatsPanel from '@/components/GraphStatsPanel';
+import GraphActionsPanel from '@/components/GraphActionsPanel';
+import NodeSearchPanel from '@/components/NodeSearchPanel';
+import ExecutionHistoryPanel from '@/components/ExecutionHistoryPanel';
 import { motion } from 'framer-motion';
 
 import { mockGraphStructure } from '@/lib/data/mockGraphData';
@@ -29,6 +33,8 @@ import { useGraphEditor } from '@/hooks/useGraphEditor';
 import { useNodeSelection } from '@/hooks/useNodeSelection';
 import { useNodeDragAndDrop } from '@/hooks/useNodeDragAndDrop';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useGraphHistory } from '@/hooks/useGraphHistory';
+import { BarChart3, Search, Clock } from 'lucide-react';
 
 // Convert the mock graph structure as fallback
 const { nodes: fallbackNodes, edges: fallbackEdges } = convertGraphStructure(mockGraphStructure);
@@ -46,6 +52,13 @@ function GraphEditor() {
   // Analysis panel state
   const [isAnalysisPanelOpen, setIsAnalysisPanelOpen] = useState(false);
   const [lastExecutionId, setLastExecutionId] = useState<string | null>(null);
+  
+  // New feature states
+  const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false);
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
+  const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
+  const [executionCount, setExecutionCount] = useState(0);
+  const [testingNodeCount, setTestingNodeCount] = useState(0);
 
   // Custom hooks for managing state and behavior
   const {
@@ -104,6 +117,57 @@ function GraphEditor() {
 
   // Keyboard shortcuts
   useKeyboardShortcuts(selectedNode, handleDeleteNode);
+  
+  // Graph history (undo/redo)
+  const { canUndo, canRedo, undo, redo, saveSnapshot } = useGraphHistory(setNodes, setEdges);
+  
+  // Save snapshot whenever nodes or edges change (debounced)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      saveSnapshot(nodes, edges);
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [nodes, edges, saveSnapshot]);
+  
+  // Count testing nodes
+  useEffect(() => {
+    const testingCount = nodes.filter(node => node.data?.isTesting || node.type === 'promptInject').length;
+    setTestingNodeCount(testingCount);
+  }, [nodes]);
+  
+  // Keyboard shortcuts for new features
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      // Ctrl/Cmd + Shift + Z for redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        redo();
+      }
+      // Ctrl/Cmd + F for search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setIsSearchPanelOpen(true);
+      }
+      // Ctrl/Cmd + I for stats
+      if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+        e.preventDefault();
+        setIsStatsPanelOpen(true);
+      }
+      // Ctrl/Cmd + H for history
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+        e.preventDefault();
+        setIsHistoryPanelOpen(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [undo, redo]);
 
   // Load graph from API on mount
   useEffect(() => {
@@ -328,6 +392,53 @@ function GraphEditor() {
   const handleNodeAdd = useCallback((nodeData: { id: string; title: string; icon: string; type: string; description?: string; nodeType?: string }) => {
     handleNodeAddBase(nodeData, setNodes);
   }, [handleNodeAddBase, setNodes]);
+  
+  // Load graph from JSON
+  const handleLoadGraph = useCallback((loadedNodes: any[], loadedEdges: any[]) => {
+    setNodes(loadedNodes);
+    setEdges(loadedEdges);
+    addLog({ level: 'success', message: 'Graph loaded successfully', source: 'System' });
+    setTimeout(() => fitView({ padding: 0.2 }), 100);
+  }, [setNodes, setEdges, addLog, fitView]);
+  
+  // Focus on a specific node (from search)
+  const handleNodeFocus = useCallback((nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (node) {
+      fitView({ 
+        nodes: [node],
+        duration: 800,
+        padding: 0.3 
+      });
+      // Highlight the node temporarily
+      setNodes(nds => nds.map(n => 
+        n.id === nodeId 
+          ? { ...n, style: { ...n.style, boxShadow: '0 0 30px rgba(139, 92, 246, 0.8)' } }
+          : n
+      ));
+      setTimeout(() => {
+        setNodes(nds => nds.map(n => 
+          n.id === nodeId 
+            ? { ...n, style: { ...n.style, boxShadow: undefined } }
+            : n
+        ));
+      }, 2000);
+    }
+  }, [nodes, fitView, setNodes]);
+  
+  // Clone selected node
+  const handleCloneNode = useCallback(() => {
+    if (selectedNode) {
+      const { cloneNode } = require('@/lib/utils/autoLayout');
+      const clonedNode = cloneNode(selectedNode);
+      setNodes(nds => [...nds, clonedNode]);
+      addLog({ 
+        level: 'success', 
+        message: `Cloned node: ${selectedNode.data?.label || selectedNode.id}`, 
+        source: 'System' 
+      });
+    }
+  }, [selectedNode, setNodes, addLog]);
 
   const isContentReady = !isLoadingGraph && !graphLoadError;
 
@@ -409,7 +520,7 @@ function GraphEditor() {
         />
       </motion.div>
 
-      {/* Graph Controls (Add, Delete, Hints) */}
+      {/* Graph Controls (Add, Delete, Clone, Hints) */}
       <GraphControls
         selectedNode={selectedNode}
         draggedNode={draggedNode}
@@ -417,9 +528,10 @@ function GraphEditor() {
         edges={edges}
         onAddNodeClick={() => setIsDirectoryOpen(true)}
         onDeleteNode={handleDeleteNode}
+        onCloneNode={handleCloneNode}
       />
 
-      {/* Top Bar */}
+      {/* Top Bar with new action buttons */}
       <TopBar 
         onRun={() => {
           console.log('[Page] TopBar onRun triggered');
@@ -427,15 +539,85 @@ function GraphEditor() {
           console.log('[Page] Number of nodes:', nodes.length);
           console.log('[Page] Number of edges:', edges.length);
           console.log('[Page] Current graph ID:', currentGraphId);
+          setExecutionCount(prev => prev + 1);
           handleRun(selectedNode, nodes, edges, currentGraphId, (executionId) => {
             console.log('[Test Page] Execution completed with ID:', executionId);
             setLastExecutionId(executionId);
             setIsAnalysisPanelOpen(true);
+            
+            // Save execution to history
+            const history = JSON.parse(localStorage.getItem('execution_history') || '[]');
+            history.unshift({
+              id: executionId,
+              timestamp: new Date().toISOString(),
+              nodeCount: nodes.length,
+              status: 'completed',
+            });
+            // Keep only last 20 executions
+            localStorage.setItem('execution_history', JSON.stringify(history.slice(0, 20)));
           });
         }} 
         isExecuting={isExecuting}
         onViewAnalysis={() => setIsAnalysisPanelOpen(true)}
         hasExecutionCompleted={!!lastExecutionId}
+      />
+      
+      {/* Floating action buttons */}
+      <motion.div
+        initial={{ x: 20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="absolute bottom-4 right-4 z-10"
+      >
+        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-2.5 flex flex-col gap-1.5">
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
+            onClick={() => setIsStatsPanelOpen(true)}
+            title="Graph Statistics (Cmd/Ctrl + I)"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center hover:scale-110 active:scale-95"
+          >
+            <BarChart3 className="w-5 h-5" />
+          </motion.button>
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.45, type: 'spring', stiffness: 300 }}
+            onClick={() => setIsSearchPanelOpen(true)}
+            title="Search Nodes (Cmd/Ctrl + F)"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center hover:scale-110 active:scale-95"
+          >
+            <Search className="w-5 h-5" />
+          </motion.button>
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
+            onClick={() => setIsHistoryPanelOpen(true)}
+            title="Execution History (Cmd/Ctrl + H)"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center hover:scale-110 active:scale-95"
+          >
+            <Clock className="w-5 h-5" />
+          </motion.button>
+        </div>
+      </motion.div>
+      
+      {/* Graph Actions Panel (Save/Load/Export/Undo/Redo/Auto-Layout) */}
+      <GraphActionsPanel
+        nodes={nodes}
+        edges={edges}
+        onLoadGraph={handleLoadGraph}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
+        currentGraphId={currentGraphId}
+        onAutoLayout={(layoutedNodes, layoutedEdges) => {
+          setNodes(layoutedNodes);
+          setEdges(layoutedEdges);
+          addLog({ level: 'success', message: 'Auto-layout applied', source: 'System' });
+        }}
       />
 
       {/* Node Directory Modal */}
@@ -476,6 +658,43 @@ function GraphEditor() {
             message: `AI Analysis complete: Risk Score ${analysis.risk_score}/100`,
             source: 'Analysis'
           });
+          
+          // Update execution history with risk score
+          const history = JSON.parse(localStorage.getItem('execution_history') || '[]');
+          const updatedHistory = history.map((exec: any) => 
+            exec.id === lastExecutionId 
+              ? { ...exec, riskScore: analysis.risk_score }
+              : exec
+          );
+          localStorage.setItem('execution_history', JSON.stringify(updatedHistory));
+        }}
+      />
+      
+      {/* Graph Stats Panel */}
+      <GraphStatsPanel
+        isOpen={isStatsPanelOpen}
+        onClose={() => setIsStatsPanelOpen(false)}
+        nodes={nodes}
+        edges={edges}
+        executionCount={executionCount}
+        testingNodeCount={testingNodeCount}
+      />
+      
+      {/* Node Search Panel */}
+      <NodeSearchPanel
+        isOpen={isSearchPanelOpen}
+        onClose={() => setIsSearchPanelOpen(false)}
+        nodes={nodes}
+        onNodeSelect={handleNodeFocus}
+      />
+      
+      {/* Execution History Panel */}
+      <ExecutionHistoryPanel
+        isOpen={isHistoryPanelOpen}
+        onClose={() => setIsHistoryPanelOpen(false)}
+        onSelectExecution={(executionId) => {
+          setLastExecutionId(executionId);
+          setIsAnalysisPanelOpen(true);
         }}
       />
     </div>
