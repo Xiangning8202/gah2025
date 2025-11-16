@@ -11,7 +11,7 @@ sys.path.insert(0, str(backend_dir))
 
 from node import Node, NodeType
 from testing_nodes.prompt_injection_node import PromptInjectionNode, create_prompt_injection_node
-# Note: fuzzer_node.py has PromptFuzzer class and fuzzer_node_function, not FuzzerNode class
+from testing_nodes.fuzzer_node import FuzzerNode, create_fuzzer_node
 
 from models.testing import (
     TestingNodeAddRequest,
@@ -56,15 +56,36 @@ class TestingService:
             TestingNodeTemplate(
                 node_type=TestingNodeType.FUZZER,
                 display_name="Fuzzer",
-                description="Generates fuzzed inputs to test edge cases and error handling",
+                description="Generates fuzzed inputs using deterministic attack templates (SQL injection, XSS, etc.)",
                 icon="🎲",
                 default_config={
-                    "fuzz_type": "random",
-                    "iterations": 10,
+                    "state_input_key": "prompt",
+                    "state_output_key": "fuzzed_prompt",
+                    "fuzzing_strategies": [
+                        "prompt_injection",
+                        "sql_injection",
+                        "xss_injection",
+                        "command_injection",
+                        "unicode_manipulation",
+                        "length_testing",
+                        "special_characters",
+                        "format_string",
+                        "encoding_attacks",
+                        "context_overflow"
+                    ],
+                    "mutation_rate": 1.0,
+                    "save_logs": True,
                 },
                 config_schema={
-                    "fuzz_type": {"type": "string", "enum": ["random", "mutation", "generation"]},
-                    "iterations": {"type": "integer", "minimum": 1, "maximum": 1000},
+                    "state_input_key": {"type": "string", "description": "State key to read input from"},
+                    "state_output_key": {"type": "string", "description": "State key to write fuzzed output to"},
+                    "fuzzing_strategies": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of fuzzing strategies to apply"
+                    },
+                    "mutation_rate": {"type": "number", "minimum": 0.0, "maximum": 1.0, "description": "Probability of applying each strategy"},
+                    "save_logs": {"type": "boolean", "description": "Whether to save fuzzing logs"},
                 },
             ),
             TestingNodeTemplate(
@@ -159,6 +180,19 @@ class TestingService:
                 testing_node.ollama_model = request.config["ollama_model"]
             if "ollama_base_url" in request.config:
                 testing_node.ollama_base_url = request.config["ollama_base_url"]
+        
+        # Update specific attributes for fuzzer nodes
+        elif isinstance(testing_node, FuzzerNode):
+            if "state_input_key" in request.config:
+                testing_node.state_input_key = request.config["state_input_key"]
+            if "state_output_key" in request.config:
+                testing_node.state_output_key = request.config["state_output_key"]
+            if "fuzzing_strategies" in request.config:
+                testing_node.strategies = request.config["fuzzing_strategies"]
+            if "mutation_rate" in request.config:
+                testing_node.mutation_rate = request.config["mutation_rate"]
+            if "save_logs" in request.config:
+                testing_node.save_logs = request.config["save_logs"]
 
         return TestingNodeConfigResponse(
             node_id=node_id,
@@ -185,21 +219,17 @@ class TestingService:
                 state_output_key=config.get("state_output_key", "injected_prompt"),
             )
         elif request.node_type == TestingNodeType.FUZZER:
-            # Create fuzzer node
-            def fuzzer_func(state: Dict[str, Any]) -> Dict[str, Any]:
-                # Simple fuzzing logic
-                import random
-                import string
-                fuzz_data = ''.join(random.choices(string.ascii_letters + string.digits, k=50))
-                return {"fuzzed_input": fuzz_data, **state}
-
-            return Node(
-                id=node_id,
+            # Create fuzzer node using the proper FuzzerNode class
+            config = request.config
+            return create_fuzzer_node(
+                node_id=node_id,
                 name=request.name or "fuzzer",
-                data=fuzzer_func,
-                node_type=NodeType.TESTING,
-                is_testing=True,
-                test_config=request.config,
+                state_input_key=config.get("state_input_key", "prompt"),
+                state_output_key=config.get("state_output_key", "fuzzed_prompt"),
+                fuzzing_strategies=config.get("fuzzing_strategies", None),
+                mutation_rate=config.get("mutation_rate", 1.0),
+                save_logs=config.get("save_logs", True),
+                log_file=config.get("log_file", None),
             )
         elif request.node_type == TestingNodeType.VALIDATOR:
             # Create validator node
@@ -311,4 +341,3 @@ _testing_service = TestingService()
 def get_testing_service() -> TestingService:
     """Get the global testing service instance."""
     return _testing_service
-
