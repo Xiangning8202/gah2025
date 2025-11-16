@@ -142,10 +142,10 @@ class FuzzerNode(Node):
         logger.info("=== FUZZER NODE: Fuzzing complete ===")
         logger.info(f"FUZZER: Replacing '{self.state_input_key}' with fuzzed version")
         
-        # Replace the original prompt with the fuzzed version AND preserve original
-        # ONLY modify the prompt field, don't create separate output fields
+        # Similar to prompt_injection_node: replace the input key with fuzzed version
+        # This is the one-input-one-output pattern - same key gets replaced
         return {
-            self.state_input_key: selected_fuzz["fuzzed_text"],  # Replace the original prompt
+            self.state_input_key: selected_fuzz["fuzzed_text"],  # Replace with fuzzed version
             "original_prompt": input_text,  # Preserve the original
             "fuzzing_applied": True,
             "fuzzing_strategy": selected_fuzz["strategy"]

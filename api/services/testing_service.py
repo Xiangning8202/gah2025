@@ -225,7 +225,7 @@ class TestingService:
                 node_id=node_id,
                 name=request.name or "fuzzer",
                 state_input_key=config.get("state_input_key", "prompt"),
-                state_output_key=config.get("state_output_key", "prompt"),  # Use same key to replace in place
+                state_output_key=config.get("state_output_key", "prompt"),  # Replace in-place (same key)
                 fuzzing_strategies=config.get("fuzzing_strategies", None),
                 mutation_rate=config.get("mutation_rate", 1.0),
                 save_logs=config.get("save_logs", True),
