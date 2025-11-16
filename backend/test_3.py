@@ -99,14 +99,14 @@ graph.add_node("step6", step6)
 
 
 graph.add_edge(START, "step1")
-
-
 graph.add_edge("step1", "step2")
 graph.add_edge("step1", "step3")
 graph.add_edge("step1", "step4")
 
 
-graph.add_conditional_edges("step4", route_after_step4)
+graph.add_conditional_edges(
+    "step4", route_after_step4, {"step4": "step4", "step5": "step5"}
+)
 
 
 graph.add_edge("step2", "step5")
