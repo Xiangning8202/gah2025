@@ -1,7 +1,9 @@
 from enum import Enum
 import requests
 from typing import Dict, Any, List
+from log import LoggerHelper
 
+log = LoggerHelper("target")
 BASE_URL = "https://6ofr2p56t1.execute-api.us-east-1.amazonaws.com/prod"
 
 
@@ -18,15 +20,19 @@ class Target(Enum):
 def message_target(target: Target, msg: str) -> Dict[str, Any]:
     url = BASE_URL + target.value
     payload = {"message": msg}
+    log.info(f"Sending to {target.name}: {msg[:60]}...")
 
     try:
         response = requests.post(url, json=payload, timeout=35)
     except requests.exceptions.Timeout:
+        log.warning(f"{target.name} request timed out")
         return {"error": "timeout", "message": "Agent did not respond in time"}
     except requests.exceptions.RequestException as e:
+        log.error(f"{target.name} request failed: {e}")
         return {"error": "request_failed", "message": str(e)}
 
     status = response.status_code
+    log.info(f"{target.name} responded with status {status}")
 
     if status == 200:
         return response.json()
@@ -56,10 +62,3 @@ def calculate_asr(
     else:
         refused = sum(1 for r in responses if is_refusal(r))
         return refused / len(responses)
-
-
-def run_attack_set(
-    target: Target, messages: List[str], expected_refusal: bool
-) -> float:
-    responses = [message_target(target, m) for m in messages]
-    return calculate_asr(responses, expected_refusal)
