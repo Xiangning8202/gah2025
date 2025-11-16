@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from target import Target, retry_message_target, calculate_asr, is_refusal
+from target import Target, retry_message_target, calculate_asr
+from refusal import is_refusal
 from dataset import DatasetHelper, get_dataset
 from typing import List
 from log import LoggerHelper

@@ -7,7 +7,7 @@ from store import Dataset
 def main():
     dataset = DatasetHelper()
     harmful_asr = run_dataset_p(
-        dataset, Dataset.HARMFUL, Target.BEAR, expected_refusal=True
+        dataset, Dataset.HARMFUL, Target.ANT, expected_refusal=True
     )
 
     print(harmful_asr)
