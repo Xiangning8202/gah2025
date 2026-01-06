@@ -1,5 +1,7 @@
 # Project Story
 
+<img width="3432" height="4852" alt="Frame 2" src="https://github.com/user-attachments/assets/d66f14fd-0205-410d-b013-217c9e8af04b" />
+
 ## What if you could break your AI agents before the bad guys do?
 
 That's the question that kicked off this whole thing. AI agents are everywhere now—chatbots, workflow automators, you name it—but nobody's really testing them for security vulnerabilities. Prompt injection attacks? Input validation? Most people just YOLO it into production and hope for the best.
